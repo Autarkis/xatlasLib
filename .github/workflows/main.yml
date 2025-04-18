@@ -1,0 +1,85 @@
+name: Create Unity Package Structure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  create-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Create package.json
+        run: |
+          cat > package.json << EOL
+          {
+            "name": "com.autarkis.xatlaslib",
+            "version": "1.0.0",
+            "displayName": "xAtlas Library",
+            "description": "Unity integration for xatlas UV mapping library",
+            "unity": "2019.4",
+            "dependencies": {},
+            "keywords": [
+              "uv",
+              "atlas",
+              "texture"
+            ],
+            "author": {
+              "name": "Your Name",
+              "email": "your.email@example.com",
+              "url": "https://github.com/yourusername"
+            }
+          }
+          EOL
+      
+      - name: Create Runtime folder structure (if not exists)
+        run: |
+          mkdir -p Runtime
+          # Move C# scripts to Runtime folder
+          find . -name "*.cs" -not -path "./Runtime/*" -not -path "./.github/*" -exec mv {} Runtime/ \;
+          # Move C/C++ files to Runtime
+          find . -name "*.cpp" -not -path "./Runtime/*" -not -path "./.github/*" -exec mv {} Runtime/ \;
+          find . -name "*.h" -not -path "./Runtime/*" -not -path "./.github/*" -exec mv {} Runtime/ \;
+          find . -name "*.c" -not -path "./Runtime/*" -not -path "./.github/*" -exec mv {} Runtime/ \;
+      
+      - name: Create Runtime meta file
+        run: |
+          cat > Runtime.meta << EOL
+          fileFormatVersion: 2
+          guid: $(cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1)
+          folderAsset: yes
+          DefaultImporter:
+            externalObjects: {}
+            userData: 
+            assetBundleName: 
+            assetBundleVariant: 
+          EOL
+      
+      - name: Create asmdef file
+        run: |
+          cat > Runtime/XAtlasLib.asmdef << EOL
+          {
+            "name": "XAtlasLib",
+            "rootNamespace": "",
+            "references": [],
+            "includePlatforms": [],
+            "excludePlatforms": [],
+            "allowUnsafeCode": true,
+            "overrideReferences": false,
+            "precompiledReferences": [],
+            "autoReferenced": true,
+            "defineConstraints": [],
+            "versionDefines": [],
+            "noEngineReferences": false
+          }
+          EOL
+      
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add .
+          git commit -m "Create Unity package structure"
+          git push
